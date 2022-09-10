@@ -1,13 +1,15 @@
 
-all: test.bin
-
-pre:
+all:
 	@if ! which arm-none-eabi-gcc ; then  \
 		printf "Cross compiler not found\n"; \
 		false; \
 	fi 
 
-test.o: pre test.c
+all: test.bin
+
+.PHONY: pre
+
+test.o: test.c
 	arm-none-eabi-gcc -c -mcpu=arm926ej-s -g test.c -o test.o
 
 startup.o: startup.s
@@ -19,12 +21,27 @@ test.elf: test.o startup.o test.ld
 test.bin: test.elf
 	arm-none-eabi-objcopy -O binary test.elf test.bin
 
+run6: test.bin
+	qemu-system-arm -M sabrelite \
+		-m 256M \
+		-nographic \
+		-audiodev none,id=none \
+		-kernel test.bin
+
 run: test.bin
 	@qemu-system-arm -M versatilepb \
 		-m 128M \
 		-nographic \
 		-audiodev none,id=none \
 		-global pl041.audiodev=none \
+		-kernel test.bin
+
+debug-run: test.bin
+	@qemu-system-arm -M versatilepb \
+		-m 128M \
+		-nographic \
+		-audiodev none,id=none \
+		-global pl041.audiodev=none -s -S \
 		-kernel test.bin
 
 clean:
